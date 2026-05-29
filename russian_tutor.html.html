@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Russian AI Tutor</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8f7f4;color:#1a1a1a;min-height:100vh}
+.app{max-width:720px;margin:0 auto;padding:16px}
+.header{display:flex;align-items:center;justify-content:space-between;padding:12px 0 20px}
+.logo{font-size:20px;font-weight:600;color:#1a1a1a}.logo span{color:#534AB7}
+.tab-bar{display:flex;gap:4px;background:#efefed;border-radius:12px;padding:4px;margin-bottom:20px}
+.tab{flex:1;padding:8px 4px;border:none;background:transparent;border-radius:8px;cursor:pointer;font-size:12px;font-weight:500;color:#666;font-family:inherit;transition:all .15s}
+.tab.active{background:#fff;color:#1a1a1a;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.screen{display:none}.screen.active{display:block}
+.card{background:#fff;border:0.5px solid rgba(0,0,0,.1);border-radius:12px;padding:16px;margin-bottom:12px}
+button.primary{width:100%;padding:13px;background:#534AB7;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:500;cursor:pointer;font-family:inherit}
+button.primary:hover{background:#3C3489}
+button.primary:disabled{background:#aaa;cursor:not-allowed}
+.speak-btn{padding:7px 12px;background:#EEEDFE;border:0.5px solid #AFA9EC;border-radius:8px;cursor:pointer;font-size:12px;color:#3C3489;font-family:inherit}
+.speak-btn:hover{background:#CECBF6}
+.chat-messages{min-height:320px;max-height:420px;overflow-y:auto;padding:8px 0;display:flex;flex-direction:column;gap:10px}
+.msg{display:flex;gap:10px;align-items:flex-start}.msg.user{flex-direction:row-reverse}
+.msg-bubble{max-width:78%;padding:10px 14px;border-radius:12px;font-size:14px;line-height:1.5}
+.msg.ai .msg-bubble{background:#f0eefc;color:#26215C}.msg.user .msg-bubble{background:#534AB7;color:#fff}
+.msg-avatar{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;font-weight:600}
+.ai-avatar{background:#EEEDFE;color:#534AB7}.user-avatar{background:#534AB7;color:#fff}
+.correction-box{background:#FFF8E6;border:0.5px solid #FAC775;border-radius:8px;padding:10px 14px;font-size:13px;color:#633806;margin-top:6px}
+.mic-btn{width:40px;height:40px;border-radius:50%;background:#534AB7;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;flex-shrink:0}
+.mic-btn.listening{background:#E24B4A;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+.alphabet-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:16px}
+.letter-card{background:#fff;border:0.5px solid rgba(0,0,0,.1);border-radius:10px;padding:10px 6px;text-align:center;cursor:pointer;transition:border-color .15s}
+.letter-card:hover{border-color:#534AB7}.letter-card.selected{border:2px solid #534AB7;background:#EEEDFE}
+.letter-big{font-size:26px;color:#1a1a1a;font-weight:500;display:block}.letter-sound{font-size:11px;color:#888;margin-top:2px}
+.alphabet-detail{background:#EEEDFE;border-radius:12px;padding:16px;margin-bottom:16px;min-height:80px}
+.flashcard-outer{background:#fff;border:0.5px solid rgba(0,0,0,.1);border-radius:16px;padding:36px 20px;text-align:center;cursor:pointer;min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;margin-bottom:12px;transition:transform .1s}
+.flashcard-outer:active{transform:scale(.98)}
+.fc-russian{font-size:48px;font-weight:500;color:#1a1a1a;margin-bottom:8px}
+.fc-translit{font-size:17px;color:#888}.fc-english{font-size:24px;font-weight:500;color:#534AB7;margin-top:4px}
+.fc-example{font-size:13px;color:#666;margin-top:10px;font-style:italic}
+.rate-row{display:flex;gap:8px;margin-bottom:12px}
+.rate-row button{flex:1;padding:11px;border-radius:8px;border:0.5px solid;cursor:pointer;font-size:13px;font-weight:500;font-family:inherit}
+.btn-wrong{background:#FCEBEB;color:#A32D2D;border-color:#F7C1C1}
+.btn-hard{background:#FAEEDA;color:#854F0B;border-color:#FAC775}
+.btn-easy{background:#EAF3DE;color:#3B6D11;border-color:#C0DD97}
+.word-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.word-chip{background:#EEEDFE;border:0.5px solid #AFA9EC;border-radius:8px;padding:8px 12px;cursor:pointer;transition:background .15s}
+.word-chip:hover{background:#CECBF6}
+.chip-ru{font-size:16px;color:#26215C;font-weight:500}.chip-en{font-size:12px;color:#534AB7;margin-top:2px}.chip-pos{font-size:10px;color:#888;margin-top:1px}
+.topic-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.topic-btn{background:#fff;border:0.5px solid rgba(0,0,0,.1);border-radius:10px;padding:12px;cursor:pointer;text-align:left;font-family:inherit;transition:border-color .15s}
+.topic-btn:hover{border-color:#534AB7}
+.topic-icon{font-size:20px;margin-bottom:4px}.topic-name{font-size:14px;font-weight:500;color:#1a1a1a}.topic-desc{font-size:12px;color:#888;margin-top:2px}
+.progress-bar{height:5px;background:#efefed;border-radius:3px;overflow:hidden;margin:6px 0}
+.progress-fill{height:100%;background:#534AB7;border-radius:3px;transition:width .3s}
+.stat-row{display:flex;justify-content:space-between;font-size:12px;color:#888;margin-bottom:10px}
+.loading-dots::after{content:'...';animation:dots 1.2s infinite}
+@keyframes dots{0%{content:'.'}33%{content:'..'}66%{content:'...'}}
+.section-label{font-size:12px;font-weight:500;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px}
+textarea{width:100%;padding:10px 14px;border:0.5px solid rgba(0,0,0,.15);border-radius:8px;font-size:14px;font-family:inherit;resize:vertical;background:#fff;color:#1a1a1a;min-height:80px}
+textarea:focus{outline:none;border-color:#534AB7}
+.home-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:20px}
+.stat-card{background:#fff;border:0.5px solid rgba(0,0,0,.1);border-radius:10px;padding:12px;text-align:center}
+.stat-num{font-size:22px;font-weight:600;color:#534AB7}.stat-lbl{font-size:11px;color:#888;margin-top:2px}
+#overlay{position:fixed;inset:0;background:#f8f7f4;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;overflow-y:auto;padding:40px 16px}
+#overlay.hidden{display:none}
+.overlay-card{background:#fff;border:0.5px solid rgba(0,0,0,.1);border-radius:16px;padding:20px;width:100%;max-width:440px;margin-bottom:12px}
+.role-btn{display:flex;align-items:center;gap:14px;width:100%;padding:16px;background:#fff;border:0.5px solid rgba(0,0,0,.1);border-radius:12px;cursor:pointer;font-family:inherit;margin-bottom:10px;transition:border-color .15s;text-align:left}
+.role-btn:hover{border-color:#534AB7}
+.role-icon{font-size:28px;flex-shrink:0}.role-name{font-size:15px;font-weight:600;color:#1a1a1a}.role-desc{font-size:12px;color:#888;margin-top:2px}
+.input-field{width:100%;padding:11px 14px;border:0.5px solid rgba(0,0,0,.15);border-radius:8px;font-size:15px;font-family:inherit;background:#fff;color:#1a1a1a;margin-bottom:10px}
+.input-field:focus{outline:none;border-color:#534AB7}
+.avatar-circle{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff;flex-shrink:0}
+#dashboard{position:fixed;inset:0;background:#f8f7f4;z-index:100;overflow-y:auto;padding:20px 16px;display:none}
+.dash-header{max-width:720px;margin:0 auto 20px;display:flex;align-items:center;justify-content:space-between}
+.dash-content{max-width:720px;margin:0 auto}
+.student-card{background:#fff;border:0.5px solid rgba(0,0,0,.1);border-radius:12px;padding:14px 16px;margin-bottom:10px;cursor:pointer;display:flex;align-items:center;gap:14px;transition:border-color .15s}
+.student-card:hover{border-color:#534AB7}
+.mini-bar{height:4px;background:#efefed;border-radius:2px;overflow:hidden}
+.mini-fill{height:100%;background:#534AB7;border-radius:2px}
+.link-box{background:#EEEDFE;border:0.5px solid #AFA9EC;border-radius:8px;padding:10px 14px;font-size:12px;color:#26215C;word-break:break-all;margin:8px 0;cursor:pointer;line-height:1.5}
+#viewing-banner{display:none;background:#534AB7;color:#fff;padding:10px 16px;font-size:13px;align-items:center;justify-content:space-between;gap:10px;position:sticky;top:0;z-index:50}
+#viewing-banner.show{display:flex}
+</style>
+</head>
+<body>
+
+<div id="viewing-banner">
+  <span><i class="ti ti-eye" style="vertical-align:-2px;margin-right:6px"></i>Viewing as student: <b id="viewing-name"></b></span>
+  <button onclick="exitStudentView()" style="background:rgba(255,255,255,.2);border:none;color:#fff;padding:5px 14px;border-radius:6px;cursor:pointer;font-family:inherit;font-size:12px">Back to dashboard</button>
+</div>
+
+<!-- OVERLAY -->
+<div id="overlay">
+  <div style="width:100%;max-width:440px">
+    <div style="text-align:center;margin-bottom:32px">
+      <div style="font-size:26px;font-weight:700">Русский <span style="color:#534AB7">AI</span> Tutor</div>
+      <div style="font-size:14px;color:#888;margin-top:6px">Who are you?</div>
+    </div>
+    <div id="step-role">
+      <button class="role-btn" onclick="pickRole('tutor')">
+        <div class="role-icon">&#x1F469;&#x200D;&#x1F3EB;</div>
+        <div><div class="role-name">I'm a Tutor</div><div class="role-desc">Manage students, share links, view their progress</div></div>
+      </button>
+      <button class="role-btn" onclick="pickRole('student')">
+        <div class="role-icon">&#x1F393;</div>
+        <div><div class="role-name">I'm a Student</div><div class="role-desc">Learn Russian with AI and track your progress</div></div>
+      </button>
+    </div>
+    <div id="step-tutor" style="display:none">
+      <div style="font-size:16px;font-weight:600;margin-bottom:16px">Tutor login</div>
+      <input class="input-field" id="tutor-name-input" placeholder="Your name (e.g. Ms. Ivanova)" />
+      <input class="input-field" id="tutor-pin-input" type="password" placeholder="PIN — 4+ digits (set once on first visit)" />
+      <button class="primary" onclick="tutorLogin()">Enter dashboard</button>
+      <button onclick="pickRole(null)" style="background:none;border:none;color:#888;font-size:13px;cursor:pointer;margin-top:12px;width:100%;text-align:center">Back</button>
+    </div>
+    <div id="step-student" style="display:none">
+      <div style="font-size:16px;font-weight:600;margin-bottom:16px">Student login</div>
+      <input class="input-field" id="student-name-input" placeholder="Your first name" />
+      <button class="primary" onclick="studentLogin()">Start learning</button>
+      <button onclick="pickRole(null)" style="background:none;border:none;color:#888;font-size:13px;cursor:pointer;margin-top:12px;width:100%;text-align:center">Back</button>
+    </div>
+  </div>
+
+  <!-- Hosting instructions -->
+  <div style="width:100%;max-width:440px;margin-top:20px;background:#FFF8E6;border:0.5px solid #FAC775;border-radius:12px;padding:16px">
+    <div style="font-size:13px;font-weight:600;color:#633806;margin-bottom:8px">⚠️ Important — how to open this file</div>
+    <div style="font-size:13px;color:#633806;line-height:1.6">
+      Firebase requires this file to be served over <b>http://</b>, not opened directly (file://).<br><br>
+      <b>Easiest option — VS Code:</b><br>
+      Install the <b>Live Server</b> extension → right-click the file → <i>Open with Live Server</i>.<br><br>
+      <b>Or use Python (any computer):</b><br>
+      Open a terminal in the same folder and run:<br>
+      <code style="background:rgba(0,0,0,.08);padding:2px 6px;border-radius:4px;font-size:12px">python3 -m http.server 8080</code><br>
+      Then open <b>http://localhost:8080/russian_tutor.html</b><br><br>
+      <b>Also set Firestore rules:</b><br>
+      In Firebase Console → Firestore → Rules, paste:<br>
+      <code style="background:rgba(0,0,0,.08);padding:4px 8px;border-radius:4px;font-size:11px;display:block;margin-top:4px;line-height:1.8">rules_version = '2';<br>service cloud.firestore {<br>&nbsp;&nbsp;match /databases/{db}/documents {<br>&nbsp;&nbsp;&nbsp;&nbsp;match /{doc=**} {<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;allow read, write: if true;<br>&nbsp;&nbsp;&nbsp;&nbsp;}<br>&nbsp;&nbsp;}<br>}</code>
+    </div>
+  </div>
+</div>
+
+<!-- TUTOR DASHBOARD -->
+<div id="dashboard">
+  <div class="dash-header">
+    <div>
+      <div style="font-size:18px;font-weight:600">Dashboard</div>
+      <div style="font-size:13px;color:#888" id="dash-tutor-label"></div>
+    </div>
+    <button class="speak-btn" onclick="tutorLogout()">Logout</button>
+  </div>
+  <div class="dash-content">
+    <div class="section-label">Student link</div>
+    <div class="overlay-card" style="margin-bottom:20px">
+      <div style="font-size:13px;color:#666;margin-bottom:6px">Share this link with your students. When they open it, they register as a student and their progress syncs here automatically.</div>
+      <div class="link-box" id="student-link" onclick="copyLink()">Loading...</div>
+      <button class="speak-btn" onclick="copyLink()" style="width:100%;text-align:center;margin-top:4px">Copy link</button>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div class="section-label" style="margin:0">Students</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span style="font-size:13px;color:#888" id="student-count"></span>
+        <button class="speak-btn" onclick="loadStudentList()">Refresh</button>
+      </div>
+    </div>
+    <div id="student-list"><div style="color:#aaa;font-size:14px;padding:20px;text-align:center">Loading<span class="loading-dots"></span></div></div>
+  </div>
+</div>
+
+<!-- STUDENT APP -->
+<div id="main-app" style="display:none">
+  <div class="app">
+    <div class="header">
+      <div class="logo">Русский <span>AI</span> Tutor</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div id="profile-avatar" class="avatar-circle" style="width:34px;height:34px;font-size:12px"></div>
+        <div>
+          <div style="font-size:13px;font-weight:500" id="profile-name-display"></div>
+          <div style="font-size:11px;color:#888" id="streak-display">0 days</div>
+        </div>
+        <button class="speak-btn" style="font-size:11px;padding:5px 8px" id="logout-btn" onclick="logoutStudent()">Logout</button>
+      </div>
+    </div>
+    <div class="tab-bar">
+      <button class="tab active" onclick="switchTab('home')" id="tab-home">Home</button>
+      <button class="tab" onclick="switchTab('convo')" id="tab-convo">Conversation</button>
+      <button class="tab" onclick="switchTab('alphabet')" id="tab-alphabet">Alphabet</button>
+      <button class="tab" onclick="switchTab('flashcards')" id="tab-flashcards">Flashcards</button>
+      <button class="tab" onclick="switchTab('translator')" id="tab-translator">Translator</button>
+    </div>
+    <!-- HOME -->
+    <div class="screen active" id="screen-home">
+      <div class="home-stats">
+        <div class="stat-card"><div class="stat-num" id="h-words">0</div><div class="stat-lbl">words learned</div></div>
+        <div class="stat-card"><div class="stat-num" id="h-sessions">0</div><div class="stat-lbl">sessions</div></div>
+        <div class="stat-card"><div class="stat-num" id="h-acc">—</div><div class="stat-lbl">accuracy</div></div>
+      </div>
+      <div class="section-label">Today's word</div>
+      <div class="card" style="margin-bottom:16px">
+        <div style="font-size:15px;font-weight:500;margin-bottom:4px">Word of the day</div>
+        <div style="font-size:36px;font-weight:500;color:#534AB7;margin:10px 0 4px" id="wotd-ru">Пожалуйста</div>
+        <div style="font-size:14px;color:#888;margin-bottom:4px" id="wotd-tr">Pozhaluysta</div>
+        <div style="font-size:16px" id="wotd-en">Please / You're welcome</div>
+        <div style="margin-top:10px;display:flex;gap:8px">
+          <button class="speak-btn" onclick="speakRussian(document.getElementById('wotd-ru').textContent)">Hear it</button>
+          <button class="speak-btn" onclick="switchTab('convo')">Practice it</button>
+        </div>
+      </div>
+      <div class="section-label">Quick start</div>
+      <div class="topic-grid">
+        <button class="topic-btn" onclick="startConvoTopic('greetings')"><div class="topic-icon">👋</div><div class="topic-name">Greetings</div><div class="topic-desc">Say hello & introduce yourself</div></button>
+        <button class="topic-btn" onclick="startConvoTopic('cafe')"><div class="topic-icon">☕</div><div class="topic-name">At the café</div><div class="topic-desc">Order food & drinks</div></button>
+        <button class="topic-btn" onclick="startConvoTopic('directions')"><div class="topic-icon">🗺️</div><div class="topic-name">Directions</div><div class="topic-desc">Ask where things are</div></button>
+        <button class="topic-btn" onclick="startConvoTopic('shopping')"><div class="topic-icon">🛍️</div><div class="topic-name">Shopping</div><div class="topic-desc">Buy things in Russian</div></button>
+      </div>
+    </div>
+    <!-- CONVERSATION -->
+    <div class="screen" id="screen-convo">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div><div style="font-size:15px;font-weight:500" id="convo-topic-title">Free conversation</div><div style="font-size:12px;color:#888">AI corrects your Russian in real time</div></div>
+        <div style="display:flex;gap:6px">
+          <button class="speak-btn" onclick="clearConvo()">Reset</button>
+          <button class="speak-btn" id="accent-toggle" onclick="toggleAccent()">Accent: ON</button>
+        </div>
+      </div>
+      <div class="card" style="padding:12px"><div class="chat-messages" id="chat-messages"></div></div>
+      <div style="margin-bottom:8px"><textarea id="convo-input" placeholder="Type in English or Russian..." rows="2"></textarea></div>
+      <div style="display:flex;gap:8px">
+        <button class="primary" style="flex:1;padding:11px" onclick="sendConvoMessage()">Send</button>
+        <button class="mic-btn" id="mic-btn" onclick="toggleMic()"><i class="ti ti-microphone" style="font-size:17px"></i></button>
+      </div>
+    </div>
+    <!-- ALPHABET -->
+    <div class="screen" id="screen-alphabet">
+      <div style="font-size:15px;font-weight:500;margin-bottom:6px">The Russian Alphabet (Кириллица)</div>
+      <div style="font-size:13px;color:#888;margin-bottom:14px">Tap any letter to learn its pronunciation</div>
+      <div class="alphabet-grid" id="alphabet-grid"></div>
+      <div class="alphabet-detail" id="alphabet-detail"><div style="font-size:13px;color:#534AB7">Tap a letter to learn it</div></div>
+      <div class="section-label" style="margin-top:4px">Practice words</div>
+      <div class="card" style="padding:12px">
+        <div id="alpha-practice-word" style="font-size:32px;font-weight:500;margin-bottom:6px">Привет</div>
+        <div id="alpha-practice-tr" style="font-size:14px;color:#888;margin-bottom:10px">Privet — "Hello"</div>
+        <div style="display:flex;gap:8px">
+          <button class="speak-btn" onclick="speakRussian(document.getElementById('alpha-practice-word').textContent)">Hear it</button>
+          <button class="speak-btn" onclick="nextAlphaWord()">Next word</button>
+        </div>
+      </div>
+    </div>
+    <!-- FLASHCARDS -->
+    <div class="screen" id="screen-flashcards">
+      <div id="fc-setup">
+        <div class="section-label">Generate a deck with AI</div>
+        <textarea id="fc-topic-input" placeholder="e.g. 'kitchen objects', 'emotions', 'verbs of motion'..." rows="2" style="margin-bottom:10px"></textarea>
+        <button class="primary" onclick="generateFlashcards()">Generate flashcard deck</button>
+        <div style="margin:14px 0 8px;text-align:center;font-size:12px;color:#aaa">or use a preset</div>
+        <div class="topic-grid">
+          <button class="topic-btn" onclick="loadPresetDeck('greetings')"><div class="topic-name">Greetings</div><div class="topic-desc">10 essential phrases</div></button>
+          <button class="topic-btn" onclick="loadPresetDeck('food')"><div class="topic-name">Food & drink</div><div class="topic-desc">10 common words</div></button>
+          <button class="topic-btn" onclick="loadPresetDeck('numbers')"><div class="topic-name">Numbers</div><div class="topic-desc">1 through 10</div></button>
+          <button class="topic-btn" onclick="loadPresetDeck('verbs')"><div class="topic-name">Core verbs</div><div class="topic-desc">10 essential verbs</div></button>
+        </div>
+      </div>
+      <div id="fc-session" style="display:none">
+        <div class="stat-row"><span id="fc-stat-label">Card 1 of 10</span><button class="speak-btn" onclick="exitFlashcards()">Back</button></div>
+        <div class="progress-bar"><div class="progress-fill" id="fc-bar" style="width:0%"></div></div>
+        <div class="flashcard-outer" onclick="flipFC()">
+          <div id="fc-front-view" style="display:flex;flex-direction:column;align-items:center">
+            <div class="fc-russian" id="fc-ru"></div>
+            <div class="fc-translit" id="fc-tr"></div>
+            <div style="font-size:13px;color:#aaa;margin-top:16px">tap to flip</div>
+          </div>
+          <div id="fc-back-view" style="display:none">
+            <div class="fc-english" id="fc-en"></div>
+            <div class="fc-example" id="fc-ex"></div>
+          </div>
+        </div>
+        <div style="margin-bottom:10px"><button class="speak-btn" style="width:100%;text-align:center" onclick="speakRussian(document.getElementById('fc-ru').textContent)">Hear word</button></div>
+        <div class="rate-row" id="rate-row" style="display:none">
+          <button class="btn-wrong" onclick="rateCard('wrong')">Again</button>
+          <button class="btn-hard" onclick="rateCard('hard')">Hard</button>
+          <button class="btn-easy" onclick="rateCard('easy')">Got it</button>
+        </div>
+      </div>
+      <div id="fc-results" style="display:none;text-align:center;padding:20px 0">
+        <div style="font-size:48px;font-weight:600;color:#534AB7" id="fc-res-score"></div>
+        <div style="font-size:16px;color:#666;margin-bottom:16px" id="fc-res-msg"></div>
+        <button class="primary" onclick="exitFlashcards()">Back to decks</button>
+      </div>
+    </div>
+    <!-- TRANSLATOR -->
+    <div class="screen" id="screen-translator">
+      <div style="font-size:15px;font-weight:500;margin-bottom:4px">Word-by-word translator</div>
+      <div style="font-size:13px;color:#888;margin-bottom:14px">Enter English — see each word translated</div>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <input id="translate-input" placeholder="e.g. I want to go to the market" onkeydown="if(event.key==='Enter')translateText()" style="flex:1;padding:10px 14px;border:0.5px solid rgba(0,0,0,.15);border-radius:8px;font-size:14px;font-family:inherit;background:#fff;color:#1a1a1a" />
+        <button class="primary" style="width:auto;padding:10px 16px" onclick="translateText()">Go</button>
+      </div>
+      <div id="translate-result" style="min-height:60px"></div>
+      <div id="translate-full" style="display:none" class="card">
+        <div style="font-size:12px;color:#888;margin-bottom:6px">Full sentence in Russian:</div>
+        <div id="translate-full-ru" style="font-size:22px;font-weight:500;color:#534AB7"></div>
+        <div id="translate-full-tr" style="font-size:14px;color:#888;margin-top:4px"></div>
+        <button class="speak-btn" style="margin-top:10px" onclick="speakRussian(document.getElementById('translate-full-ru').textContent)">Hear full sentence</button>
+      </div>
+      <div style="margin-top:20px">
+        <div class="section-label">Quick phrases</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          <button class="speak-btn" onclick="setTranslate('Where is the bathroom?')">Where is the bathroom?</button>
+          <button class="speak-btn" onclick="setTranslate('I don\'t understand')">I don't understand</button>
+          <button class="speak-btn" onclick="setTranslate('How much does it cost?')">How much does it cost?</button>
+          <button class="speak-btn" onclick="setTranslate('I love you')">I love you</button>
+          <button class="speak-btn" onclick="setTranslate('My name is')">My name is</button>
+          <button class="speak-btn" onclick="setTranslate('Can you speak slower?')">Can you speak slower?</button>
+        </div>
+      </div>
+      <div style="margin-top:24px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div class="section-label" style="margin:0">History</div>
+          <button class="speak-btn" style="font-size:11px;padding:4px 8px" onclick="clearTranslateHistory()">Clear all</button>
+        </div>
+        <div id="translate-history"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc, collection, getDocs, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+const cfg={apiKey:"AIzaSyDoKZA4bfa-UP66lHC7DLYye-dsoOfpOBU",authDomain:"russian-ai-tutor.firebaseapp.com",projectId:"russian-ai-tutor",storageBucket:"russian-ai-tutor.firebasestorage.app",messagingSenderId:"402944778004",appId:"1:402944778004:web:c1db42bef9a654cf1e6c01"};
+const fba=initializeApp(cfg); const db=getFirestore(fba);
+window._db=db;window._doc=doc;window._getDoc=getDoc;window._setDoc=setDoc;
+window._collection=collection;window._getDocs=getDocs;window._serverTimestamp=serverTimestamp;
+window._fbReady=true;window.dispatchEvent(new Event('fbReady'));
+</script>
+
+<script>
+// DATA
+const ALPHABET=[
+  {l:'А',s:'ah',ipa:'a',ex:'арбуз (arbuz) — watermelon',tip:'Like "a" in "father"'},
+  {l:'Б',s:'beh',ipa:'b',ex:'банан (banan) — banana',tip:'Like "b" in "ball"'},
+  {l:'В',s:'veh',ipa:'v',ex:'вода (voda) — water',tip:'Like "v" in "voice"'},
+  {l:'Г',s:'geh',ipa:'g',ex:'город (gorod) — city',tip:'Like "g" in "go"'},
+  {l:'Д',s:'deh',ipa:'d',ex:'дом (dom) — house',tip:'Like "d" in "door"'},
+  {l:'Е',s:'yeh',ipa:'je',ex:'ель (yel) — fir tree',tip:'Like "ye" in "yes"'},
+  {l:'Ё',s:'yoh',ipa:'jo',ex:'ёж (yozh) — hedgehog',tip:'Like "yo" in "your"'},
+  {l:'Ж',s:'zheh',ipa:'ʒ',ex:'журнал (zhurnal) — magazine',tip:'Like "s" in "pleasure"'},
+  {l:'З',s:'zeh',ipa:'z',ex:'зима (zima) — winter',tip:'Like "z" in "zoo"'},
+  {l:'И',s:'ee',ipa:'i',ex:'имя (imya) — name',tip:'Like "ee" in "see"'},
+  {l:'Й',s:'y',ipa:'j',ex:'йогурт (yogurt) — yogurt',tip:'Short "y" as in "toy"'},
+  {l:'К',s:'kah',ipa:'k',ex:'кот (kot) — cat',tip:'Like "k" in "key"'},
+  {l:'Л',s:'el',ipa:'l',ex:'луна (luna) — moon',tip:'Like "l" in "lamp"'},
+  {l:'М',s:'em',ipa:'m',ex:'мама (mama) — mom',tip:'Like "m" in "mother"'},
+  {l:'Н',s:'en',ipa:'n',ex:'нос (nos) — nose',tip:'Like "n" in "no"'},
+  {l:'О',s:'oh',ipa:'o',ex:'окно (okno) — window',tip:'Like "o" in "more"'},
+  {l:'П',s:'peh',ipa:'p',ex:'папа (papa) — dad',tip:'Like "p" in "pen"'},
+  {l:'Р',s:'err',ipa:'r',ex:'рыба (ryba) — fish',tip:'Rolled r — vibrate your tongue'},
+  {l:'С',s:'es',ipa:'s',ex:'слово (slovo) — word',tip:'Like "s" in "sun"'},
+  {l:'Т',s:'teh',ipa:'t',ex:'тигр (tigr) — tiger',tip:'Like "t" in "top"'},
+  {l:'У',s:'oo',ipa:'u',ex:'утро (utro) — morning',tip:'Like "oo" in "food"'},
+  {l:'Ф',s:'ef',ipa:'f',ex:'фото (foto) — photo',tip:'Like "f" in "fan"'},
+  {l:'Х',s:'khah',ipa:'x',ex:'хлеб (khleb) — bread',tip:'Like Scottish ch in loch'},
+  {l:'Ц',s:'tseh',ipa:'ts',ex:'цирк (tsirk) — circus',tip:'Like "ts" in "cats"'},
+  {l:'Ч',s:'cheh',ipa:'tɕ',ex:'чай (chay) — tea',tip:'Like "ch" in "chair"'},
+  {l:'Ш',s:'shah',ipa:'ʂ',ex:'школа (shkola) — school',tip:'Like "sh" in "shop"'},
+  {l:'Щ',s:'shchah',ipa:'ɕː',ex:'щи (shchi) — cabbage soup',tip:'Long soft shch sound'},
+  {l:'Ъ',s:'tvyordy',ipa:'ʔ',ex:'подъезд — entrance',tip:'Hard sign — separates syllables'},
+  {l:'Ы',s:'yery',ipa:'ɨ',ex:'рыба (ryba) — fish',tip:'Say ee with lips slightly back'},
+  {l:'Ь',s:'myagky',ipa:'ʲ',ex:'соль — salt',tip:'Soft sign — softens preceding consonant'},
+  {l:'Э',s:'eh',ipa:'e',ex:'это (eto) — this',tip:'Like "e" in "bed"'},
+  {l:'Ю',s:'yoo',ipa:'ju',ex:'юг (yug) — south',tip:'Like "you" in English'},
+  {l:'Я',s:'yah',ipa:'ja',ex:'яблоко (yabloko) — apple',tip:'Like "ya" in "yard"'},
+];
+const PRACTICE_WORDS=[
+  {w:'Привет',t:'Privet — Hello'},{w:'Спасибо',t:'Spasibo — Thank you'},
+  {w:'Хорошо',t:'Khorosho — Good / OK'},{w:'Пожалуйста',t:'Pozhaluysta — Please'},
+  {w:'Россия',t:'Rossiya — Russia'},{w:'Москва',t:'Moskva — Moscow'},
+  {w:'Красивый',t:'Krasivyy — Beautiful'},{w:'Да',t:'Da — Yes'},
+  {w:'Нет',t:'Net — No'},{w:'Водка',t:'Vodka — Vodka'},
+];
+const PRESETS={
+  greetings:[
+    {ru:'Привет',tr:'Privet',en:'Hi / Hello',ex:'Привет! Как дела?'},
+    {ru:'Здравствуйте',tr:'Zdravstvuyte',en:'Hello (formal)',ex:'Здравствуйте, рад вас видеть.'},
+    {ru:'Пока',tr:'Poka',en:'Bye',ex:'Пока, увидимся!'},
+    {ru:'Спасибо',tr:'Spasibo',en:'Thank you',ex:'Большое спасибо!'},
+    {ru:'Пожалуйста',tr:'Pozhaluysta',en:"Please / You're welcome",ex:'Пожалуйста, помогите мне.'},
+    {ru:'Извините',tr:'Izvinite',en:'Excuse me / Sorry',ex:'Извините, вы говорите по-английски?'},
+    {ru:'Как дела?',tr:'Kak dela?',en:'How are you?',ex:'Привет! Как дела?'},
+    {ru:'Меня зовут...',tr:'Menya zovut...',en:'My name is...',ex:'Меня зовут Анна.'},
+    {ru:'Откуда вы?',tr:'Otkuda vy?',en:'Where are you from?',ex:'Откуда вы? — Я из Канады.'},
+    {ru:'До свидания',tr:'Do svidaniya',en:'Goodbye (formal)',ex:'До свидания, спокойной ночи!'},
+  ],
+  food:[
+    {ru:'Вода',tr:'Voda',en:'Water',ex:'Дайте воды, пожалуйста.'},
+    {ru:'Хлеб',tr:'Khleb',en:'Bread',ex:'Свежий хлеб вкусный.'},
+    {ru:'Мясо',tr:'Myaso',en:'Meat',ex:'Я ем мясо.'},
+    {ru:'Рыба',tr:'Ryba',en:'Fish',ex:'Рыба свежая.'},
+    {ru:'Суп',tr:'Sup',en:'Soup',ex:'Борщ — русский суп.'},
+    {ru:'Чай',tr:'Chay',en:'Tea',ex:'Один чай, пожалуйста.'},
+    {ru:'Кофе',tr:'Kofe',en:'Coffee',ex:'Я люблю кофе.'},
+    {ru:'Яблоко',tr:'Yabloko',en:'Apple',ex:'Красное яблоко.'},
+    {ru:'Молоко',tr:'Moloko',en:'Milk',ex:'Стакан молока.'},
+    {ru:'Борщ',tr:'Borshch',en:'Borscht',ex:'Борщ — традиционный суп.'},
+  ],
+  numbers:[
+    {ru:'Один',tr:'Odin',en:'One',ex:'Один кофе.'},{ru:'Два',tr:'Dva',en:'Two',ex:'Два билета.'},
+    {ru:'Три',tr:'Tri',en:'Three',ex:'Три дня.'},{ru:'Четыре',tr:'Chetyre',en:'Four',ex:'Четыре человека.'},
+    {ru:'Пять',tr:"Pyat'",en:'Five',ex:'Пять рублей.'},{ru:'Шесть',tr:"Shest'",en:'Six',ex:'Шесть часов.'},
+    {ru:'Семь',tr:"Sem'",en:'Seven',ex:'Семь дней.'},{ru:'Восемь',tr:"Vosem'",en:'Eight',ex:'Восемь минут.'},
+    {ru:'Девять',tr:"Devyat'",en:'Nine',ex:'Девять утра.'},{ru:'Десять',tr:"Desyat'",en:'Ten',ex:'Десять рублей.'},
+  ],
+  verbs:[
+    {ru:'Говорить',tr:"Govorit'",en:'To speak',ex:'Я говорю по-русски.'},
+    {ru:'Понимать',tr:"Ponimat'",en:'To understand',ex:'Я не понимаю.'},
+    {ru:'Хотеть',tr:"Khotet'",en:'To want',ex:'Я хочу кофе.'},
+    {ru:'Любить',tr:"Lyubit'",en:'To love',ex:'Я люблю Россию.'},
+    {ru:'Идти',tr:'Idti',en:'To go',ex:'Я иду домой.'},
+    {ru:'Есть',tr:"Est'",en:'To eat',ex:'Я ем суп.'},
+    {ru:'Знать',tr:"Znat'",en:'To know',ex:'Я знаю это слово.'},
+    {ru:'Читать',tr:"Chitat'",en:'To read',ex:'Я читаю книгу.'},
+    {ru:'Писать',tr:"Pisat'",en:'To write',ex:'Я пишу письмо.'},
+    {ru:'Жить',tr:"Zhit'",en:'To live',ex:'Я живу в Канаде.'},
+  ]
+};
+
+// STATE
+const ACOLORS=['#534AB7','#1D9E75','#D85A30','#D4537E','#185FA5','#BA7517'];
+function aColor(n){let h=0;for(let c of n)h=(h+c.charCodeAt(0))%ACOLORS.length;return ACOLORS[h];}
+function ini(n){return n.trim().split(/\s+/).map(w=>w[0]).join('').toUpperCase().slice(0,2);}
+function slug(s){return s.toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');}
+
+let currentRole=null,currentUser=null,tutorId=null,viewingStudent=null;
+let wordStatus={},totalAnswered=0,totalCorrect=0,sessions=0,streak=0;
+let translateHistory=[],convoHistory=[],accentCheck=true,convoTopic='free';
+let fcDeck=[],fcIndex=0,fcCorrect=0,fcFlipped=false,practiceWordIndex=0,recognition=null;
+let saveTimer=null;
+
+function scheduleSave(){clearTimeout(saveTimer);saveTimer=setTimeout(pushStudentData,2000);}
+
+async function pushStudentData(){
+  if(!window._db||!currentUser||currentRole!=='student'||viewingStudent) return;
+  try {
+    await window._setDoc(window._doc(window._db,'students',slug(currentUser)),{
+      name:currentUser,wordStatus,totalAnswered,totalCorrect,sessions,streak,
+      lastSeen:new Date().toDateString(),
+      translateHistory:translateHistory.slice(0,50),
+      updatedAt:window._serverTimestamp()
+    },{merge:true});
+  } catch(e){console.warn('Save failed',e);}
+}
+
+async function loadStudentData(name){
+  if(!window._db) return;
+  try {
+    const snap=await window._getDoc(window._doc(window._db,'students',slug(name)));
+    if(snap.exists()){
+      const d=snap.data();
+      wordStatus=d.wordStatus||{};totalAnswered=d.totalAnswered||0;totalCorrect=d.totalCorrect||0;
+      sessions=d.sessions||0;streak=d.streak||0;translateHistory=d.translateHistory||[];
+      const today=new Date().toDateString(),yest=new Date(Date.now()-86400000).toDateString();
+      if(d.lastSeen&&d.lastSeen!==today){streak=(d.lastSeen===yest)?streak+1:1;await pushStudentData();}
+    } else {streak=1;await pushStudentData();}
+  } catch(e){console.warn('Load failed',e);}
+}
+
+async function loadStudentById(id){
+  if(!window._db) return null;
+  try{const s=await window._getDoc(window._doc(window._db,'students',id));return s.exists()?s.data():null;}catch(e){return null;}
+}
+
+function waitForFb(){return new Promise(r=>{if(window._fbReady)r();else window.addEventListener('fbReady',r,{once:true});});}
+
+// AUTH
+function pickRole(role){
+  ['step-role','step-tutor','step-student'].forEach(id=>document.getElementById(id).style.display='none');
+  document.getElementById(role?'step-'+role:'step-role').style.display='block';
+}
+
+function showLoginError(elId, msg, stepId){
+  let el=document.getElementById(elId);
+  if(!el){el=document.createElement('div');el.id=elId;el.style.cssText='background:#FCEBEB;border:0.5px solid #F7C1C1;border-radius:8px;padding:10px 14px;font-size:13px;color:#A32D2D;margin-bottom:10px';}
+  el.textContent=msg;
+  const step=document.getElementById(stepId);
+  const btn=step.querySelector('button.primary');
+  step.insertBefore(el,btn);
+}
+function clearLoginError(id){const el=document.getElementById(id);if(el)el.remove();}
+
+async function tutorLogin(){
+  clearLoginError('tutor-err');
+  const name=document.getElementById('tutor-name-input').value.trim();
+  const pin=document.getElementById('tutor-pin-input').value.trim();
+  if(!name||!pin){showLoginError('tutor-err','Please enter your name and a PIN.','step-tutor');return;}
+  if(pin.length<4){showLoginError('tutor-err','PIN must be at least 4 digits.','step-tutor');return;}
+  const btn=document.querySelector('#step-tutor button.primary');
+  btn.textContent='Connecting...';btn.disabled=true;
+  try {
+    await waitForFb();
+    const id=slug(name);tutorId=id;
+    const ref=window._doc(window._db,'tutors',id);
+    const snap=await window._getDoc(ref);
+    if(!snap.exists()){
+      await window._setDoc(ref,{name,pin,createdAt:window._serverTimestamp()});
+    } else if(snap.data().pin!==pin){
+      showLoginError('tutor-err','Wrong PIN. Try again.','step-tutor');
+      btn.textContent='Enter dashboard';btn.disabled=false;return;
+    }
+    currentRole='tutor';currentUser=name;
+    localStorage.setItem('ru_session',JSON.stringify({role:'tutor',name}));
+    showDashboard();
+  } catch(e){
+    console.error('Tutor login error:',e);
+    showLoginError('tutor-err','Connection failed: '+e.message+'. You must open this file via a web server (not file://). See instructions below.','step-tutor');
+    btn.textContent='Enter dashboard';btn.disabled=false;
+  }
+}
+
+async function studentLogin(){
+  clearLoginError('student-err');
+  const name=document.getElementById('student-name-input').value.trim();
+  if(!name){showLoginError('student-err','Please enter your name.','step-student');return;}
+  const btn=document.querySelector('#step-student button.primary');
+  btn.textContent='Loading...';btn.disabled=true;
+  try {
+    currentRole='student';currentUser=name;
+    localStorage.setItem('ru_session',JSON.stringify({role:'student',name}));
+    await initStudentApp(name);
+  } catch(e){
+    console.error('Student login error:',e);
+    showLoginError('student-err','Connection failed: '+e.message+'. You must open this file via a web server (not file://). See instructions below.','step-student');
+    btn.textContent='Start learning';btn.disabled=false;
+  }
+}
+
+async function initStudentApp(name){
+  await waitForFb();
+  await loadStudentData(name);
+  document.getElementById('overlay').classList.add('hidden');
+  document.getElementById('main-app').style.display='block';
+  document.getElementById('profile-name-display').textContent=name;
+  const av=document.getElementById('profile-avatar');
+  av.style.background=aColor(name);av.textContent=ini(name);
+  document.getElementById('logout-btn').style.display='';
+  updateStreak();updateHomeStats();renderTranslateHistory();renderAlphabet();clearConvo();
+}
+
+function logoutStudent(){
+  if(!confirm('Log out?'))return;
+  localStorage.removeItem('ru_session');location.reload();
+}
+function tutorLogout(){
+  if(!confirm('Log out?'))return;
+  localStorage.removeItem('ru_session');location.reload();
+}
+
+// DASHBOARD
+function showDashboard(){
+  document.getElementById('overlay').classList.add('hidden');
+  document.getElementById('dashboard').style.display='block';
+  document.getElementById('dash-tutor-label').textContent='Logged in as '+currentUser;
+  const base=window.location.href.split('?')[0];
+  document.getElementById('student-link').textContent=base+'?tutor='+encodeURIComponent(tutorId);
+  loadStudentList();
+}
+
+function copyLink(){
+  navigator.clipboard.writeText(document.getElementById('student-link').textContent)
+    .then(()=>alert('Link copied! Share it with your students.'));
+}
+
+async function loadStudentList(){
+  await waitForFb();
+  document.getElementById('student-list').innerHTML='<div style="color:#aaa;font-size:14px;padding:20px;text-align:center">Loading<span class="loading-dots"></span></div>';
+  const snap=await window._getDocs(window._collection(window._db,'students'));
+  const list=[];
+  snap.forEach(d=>list.push({id:d.id,...d.data()}));
+  list.sort((a,b)=>(b.updatedAt?.seconds||0)-(a.updatedAt?.seconds||0));
+  document.getElementById('student-count').textContent=list.length+' student'+(list.length!==1?'s':'');
+  if(!list.length){
+    document.getElementById('student-list').innerHTML='<div style="color:#aaa;font-size:14px;padding:20px;text-align:center;background:#fff;border-radius:12px">No students yet — share the link above!</div>';
+    return;
+  }
+  document.getElementById('student-list').innerHTML=list.map(s=>{
+    const known=Object.values(s.wordStatus||{}).filter(v=>v==='known').length;
+    const acc=s.totalAnswered>0?Math.round((s.totalCorrect/s.totalAnswered)*100)+'%':'—';
+    const pct=Math.min(100,Math.round((known/60)*100));
+    return `<div class="student-card" onclick="viewStudent('${s.id}','${(s.name||s.id).replace(/'/g,"\\'")}')">
+      <div class="avatar-circle" style="background:${aColor(s.name||s.id)}">${ini(s.name||s.id)}</div>
+      <div style="flex:1">
+        <div style="font-size:15px;font-weight:500">${s.name||s.id}</div>
+        <div style="font-size:12px;color:#888;margin-top:2px">${known} words · ${acc} accuracy · ${s.sessions||0} sessions · ${s.streak||0}🔥 streak</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+          <div class="mini-bar" style="flex:1"><div class="mini-fill" style="width:${pct}%"></div></div>
+          <span style="font-size:11px;color:#888">${pct}%</span>
+        </div>
+        <div style="font-size:11px;color:#aaa;margin-top:4px">Last seen: ${s.lastSeen||'never'}</div>
+      </div>
+      <i class="ti ti-eye" style="font-size:18px;color:#ccc"></i>
+    </div>`;
+  }).join('');
+}
+
+async function viewStudent(id,name){
+  const data=await loadStudentById(id);
+  if(!data){alert('No data found for this student.');return;}
+  viewingStudent={id,name};
+  wordStatus=data.wordStatus||{};totalAnswered=data.totalAnswered||0;totalCorrect=data.totalCorrect||0;
+  sessions=data.sessions||0;streak=data.streak||0;translateHistory=data.translateHistory||[];
+  document.getElementById('dashboard').style.display='none';
+  document.getElementById('main-app').style.display='block';
+  document.getElementById('viewing-banner').classList.add('show');
+  document.getElementById('viewing-name').textContent=name;
+  document.getElementById('profile-name-display').textContent=name;
+  document.getElementById('logout-btn').style.display='none';
+  const av=document.getElementById('profile-avatar');
+  av.style.background=aColor(name);av.textContent=ini(name);
+  updateStreak();updateHomeStats();renderTranslateHistory();renderAlphabet();clearConvo();
+}
+
+function exitStudentView(){
+  viewingStudent=null;
+  document.getElementById('main-app').style.display='none';
+  document.getElementById('viewing-banner').classList.remove('show');
+  document.getElementById('dashboard').style.display='block';
+  loadStudentList();
+}
+
+// RESUME SESSION
+async function resumeSession(){
+  await waitForFb();
+  try {
+    const raw=localStorage.getItem('ru_session');if(!raw)return;
+    const s=JSON.parse(raw);
+    if(s.role==='tutor'){
+      const snap=await window._getDoc(window._doc(window._db,'tutors',slug(s.name)));
+      if(snap.exists()){currentRole='tutor';currentUser=s.name;tutorId=slug(s.name);showDashboard();return;}
+    } else if(s.role==='student'){
+      currentRole='student';currentUser=s.name;await initStudentApp(s.name);return;
+    }
+  } catch(e){}
+}
+
+function checkUrl(){
+  const p=new URLSearchParams(window.location.search);
+  if(p.get('tutor')){pickRole('student');}
+}
+
+// APP
+function switchTab(t){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('screen-'+t).classList.add('active');
+  document.getElementById('tab-'+t).classList.add('active');
+  updateHomeStats();
+}
+
+function updateHomeStats(){
+  const known=Object.values(wordStatus).filter(v=>v==='known').length;
+  document.getElementById('h-words').textContent=known;
+  document.getElementById('h-sessions').textContent=sessions;
+  document.getElementById('h-acc').textContent=totalAnswered>0?Math.round((totalCorrect/totalAnswered)*100)+'%':'—';
+  updateStreak();
+  if(currentRole==='student'&&!viewingStudent)scheduleSave();
+}
+
+function updateStreak(){
+  document.getElementById('streak-display').textContent=streak+'🔥 '+(streak===1?'day':'days');
+}
+
+function speakRussian(t){if(!t)return;const u=new SpeechSynthesisUtterance(t);u.lang='ru-RU';u.rate=0.85;speechSynthesis.cancel();speechSynthesis.speak(u);}
+function setTranslate(t){document.getElementById('translate-input').value=t;translateText();}
+function toggleAccent(){accentCheck=!accentCheck;document.getElementById('accent-toggle').textContent='Accent: '+(accentCheck?'ON':'OFF');}
+
+function clearConvo(){
+  convoHistory=[];document.getElementById('chat-messages').innerHTML='';
+  addAIMsg("Привет! I'm your Russian tutor. Write in English or Russian — I'll correct you and teach you in real time. What would you like to learn?");
+}
+
+function startConvoTopic(t){
+  convoTopic=t;
+  const titles={greetings:'Greetings practice',cafe:'At the café',directions:'Asking directions',shopping:'Shopping'};
+  const intros={
+    greetings:"Отлично! Let's practice greetings. Try saying hello in Russian — Привет or Здравствуйте!",
+    cafe:"Добро пожаловать! You're in a Russian café. I'm the waiter. Try: Я хочу кофе. (I want coffee.)",
+    directions:"Хорошо! You're lost in Moscow. Ask me where the metro is: Где метро?",
+    shopping:"Добро пожаловать в магазин! Ask me the price: Сколько стоит...?"
+  };
+  document.getElementById('convo-topic-title').textContent=titles[t]||'Free conversation';
+  convoHistory=[];document.getElementById('chat-messages').innerHTML='';
+  addAIMsg(intros[t]||"Let's chat!");switchTab('convo');
+}
+
+function addAIMsg(text,corr){
+  const d=document.createElement('div');d.className='msg ai';
+  d.innerHTML=`<div class="msg-avatar ai-avatar">RU</div><div><div class="msg-bubble">${text}</div>${corr?`<div class="correction-box"><b>Tip:</b> ${corr}</div>`:''}</div>`;
+  document.getElementById('chat-messages').appendChild(d);
+  document.getElementById('chat-messages').scrollTop=9999;
+}
+
+function addUserMsg(text){
+  const d=document.createElement('div');d.className='msg user';
+  d.innerHTML=`<div class="msg-avatar user-avatar">You</div><div class="msg-bubble">${text}</div>`;
+  document.getElementById('chat-messages').appendChild(d);
+  document.getElementById('chat-messages').scrollTop=9999;
+}
+
+async function sendConvoMessage(){
+  const inp=document.getElementById('convo-input');
+  const text=inp.value.trim();if(!text)return;inp.value='';
+  addUserMsg(text);convoHistory.push({role:'user',content:text});
+  const ld=document.createElement('div');ld.className='msg ai';ld.id='ldmsg';
+  ld.innerHTML=`<div class="msg-avatar ai-avatar">RU</div><div class="msg-bubble"><span class="loading-dots">Thinking</span></div>`;
+  document.getElementById('chat-messages').appendChild(ld);document.getElementById('chat-messages').scrollTop=9999;
+  const sys=`You are a friendly Russian language tutor. Respond naturally in English+Russian. If the student writes Russian, correct errors. ${accentCheck?'After your reply write CORRECTION: followed by one pronunciation tip.':''} Topic: ${convoTopic}. Be concise (2-4 sentences).`;
+  try {
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:sys,messages:convoHistory})});
+    const data=await r.json();
+    const full=data.content.map(c=>c.text||'').join('');
+    const parts=full.split(/\nCORRECTION:/i);
+    convoHistory.push({role:'assistant',content:full});
+    document.getElementById('ldmsg').remove();
+    addAIMsg(parts[0].trim(),accentCheck&&parts[1]?parts[1].trim():null);
+    const ruw=parts[0].match(/[А-Яа-яЁё]+/g);
+    if(ruw)speakRussian(ruw.slice(0,4).join(' '));
+  } catch(e){document.getElementById('ldmsg').remove();addAIMsg('Connection error. Please try again.');}
+}
+
+function toggleMic(){
+  if(!('webkitSpeechRecognition' in window)&&!('SpeechRecognition' in window)){alert('Use Chrome for microphone.');return;}
+  if(recognition){recognition.stop();recognition=null;document.getElementById('mic-btn').classList.remove('listening');return;}
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  recognition=new SR();recognition.lang='ru-RU';recognition.continuous=false;
+  recognition.onresult=e=>{document.getElementById('convo-input').value=e.results[0][0].transcript;recognition=null;document.getElementById('mic-btn').classList.remove('listening');};
+  recognition.onerror=recognition.onend=()=>{recognition=null;document.getElementById('mic-btn').classList.remove('listening');};
+  recognition.start();document.getElementById('mic-btn').classList.add('listening');
+}
+
+function renderAlphabet(){
+  document.getElementById('alphabet-grid').innerHTML=ALPHABET.map((a,i)=>`<div class="letter-card" onclick="selectLetter(${i})"><span class="letter-big">${a.l}</span><span class="letter-sound">${a.s}</span></div>`).join('');
+}
+
+function selectLetter(i){
+  document.querySelectorAll('.letter-card').forEach((c,j)=>c.classList.toggle('selected',i===j));
+  const a=ALPHABET[i];
+  document.getElementById('alphabet-detail').innerHTML=`<div style="display:flex;align-items:center;gap:14px;margin-bottom:10px"><div style="font-size:52px;font-weight:500;color:#534AB7">${a.l}</div><div><div style="font-size:18px;font-weight:500">${a.s} <span style="font-size:14px;color:#888">/${a.ipa}/</span></div><div style="font-size:13px;color:#666;margin-top:4px">${a.tip}</div></div><button class="speak-btn" style="margin-left:auto" onclick="speakRussian('${a.l}')">Hear</button></div><div style="font-size:13px;color:#534AB7"><b>Example:</b> ${a.ex}</div>`;
+}
+
+function nextAlphaWord(){practiceWordIndex=(practiceWordIndex+1)%PRACTICE_WORDS.length;const w=PRACTICE_WORDS[practiceWordIndex];document.getElementById('alpha-practice-word').textContent=w.w;document.getElementById('alpha-practice-tr').textContent=w.t;}
+
+function loadPresetDeck(n){fcDeck=[...PRESETS[n]].sort(()=>Math.random()-0.5);startFCSession();}
+
+async function generateFlashcards(){
+  const topic=document.getElementById('fc-topic-input').value.trim();if(!topic){alert('Enter a topic.');return;}
+  const btn=document.querySelector('#fc-setup button.primary');btn.textContent='Generating...';btn.disabled=true;
+  try {
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:`Create 8 Russian flashcards about: "${topic}". ONLY return a JSON array, no markdown. Format: [{"ru":"...","tr":"...","en":"...","ex":"..."}]`}]})});
+    const data=await r.json();
+    let txt=data.content.map(c=>c.text||'').join('').replace(/```json|```/g,'').trim();
+    fcDeck=JSON.parse(txt).sort(()=>Math.random()-0.5);startFCSession();
+  } catch(e){btn.textContent='Generate flashcard deck';btn.disabled=false;alert('Failed. Try again.');}
+}
+
+function startFCSession(){fcIndex=0;fcCorrect=0;fcFlipped=false;sessions++;document.getElementById('fc-setup').style.display='none';document.getElementById('fc-results').style.display='none';document.getElementById('fc-session').style.display='block';loadFC();}
+
+function loadFC(){
+  if(fcIndex>=fcDeck.length){showFCResults();return;}
+  const c=fcDeck[fcIndex];
+  document.getElementById('fc-ru').textContent=c.ru;document.getElementById('fc-tr').textContent=c.tr;
+  document.getElementById('fc-en').textContent=c.en;document.getElementById('fc-ex').textContent=c.ex;
+  document.getElementById('fc-front-view').style.display='flex';document.getElementById('fc-back-view').style.display='none';
+  document.getElementById('rate-row').style.display='none';fcFlipped=false;
+  document.getElementById('fc-bar').style.width=Math.round((fcIndex/fcDeck.length)*100)+'%';
+  document.getElementById('fc-stat-label').textContent='Card '+(fcIndex+1)+' of '+fcDeck.length;
+}
+
+function flipFC(){if(!fcFlipped){document.getElementById('fc-front-view').style.display='none';document.getElementById('fc-back-view').style.display='block';document.getElementById('rate-row').style.display='flex';fcFlipped=true;}}
+
+function rateCard(r){
+  const c=fcDeck[fcIndex];
+  if(r==='easy'){fcCorrect++;totalCorrect++;wordStatus[c.ru]='known';}else{wordStatus[c.ru]='learning';}
+  totalAnswered++;fcIndex++;loadFC();
+}
+
+function showFCResults(){
+  const pct=Math.round((fcCorrect/fcDeck.length)*100);
+  document.getElementById('fc-session').style.display='none';document.getElementById('fc-results').style.display='block';
+  document.getElementById('fc-res-score').textContent=pct+'%';
+  document.getElementById('fc-res-msg').textContent=pct>=80?'Excellent work!':pct>=60?'Great job! Keep going':'Keep practicing!';
+  updateHomeStats();
+}
+
+function exitFlashcards(){document.getElementById('fc-session').style.display='none';document.getElementById('fc-results').style.display='none';document.getElementById('fc-setup').style.display='block';const b=document.querySelector('#fc-setup button.primary');b.textContent='Generate flashcard deck';b.disabled=false;}
+
+function renderTranslateHistory(){
+  const c=document.getElementById('translate-history');if(!c)return;
+  if(!translateHistory.length){c.innerHTML='<div style="color:#aaa;font-size:13px;padding:6px 0">No translations yet</div>';return;}
+  c.innerHTML=translateHistory.map((item,i)=>`<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:0.5px solid rgba(0,0,0,.07);cursor:pointer" onclick="loadHistoryItem(${i})"><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:500;color:#534AB7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${item.full_ru}</div><div style="font-size:12px;color:#888;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${item.input} · ${item.full_tr}</div></div><button class="speak-btn" style="flex-shrink:0;padding:5px 8px" onclick="event.stopPropagation();speakRussian('${item.full_ru.replace(/'/g,"\\'")}')">&#x1F50A;</button><button style="background:none;border:none;cursor:pointer;color:#ccc;font-size:18px;padding:0 4px" onclick="event.stopPropagation();deleteHistoryItem(${i})">×</button></div>`).join('');
+}
+
+function loadHistoryItem(i){
+  const item=translateHistory[i];
+  document.getElementById('translate-input').value=item.input;
+  document.getElementById('translate-full-ru').textContent=item.full_ru;
+  document.getElementById('translate-full-tr').textContent=item.full_tr;
+  document.getElementById('translate-full').style.display='block';
+  document.getElementById('translate-result').innerHTML='<div class="word-chips">'+item.words.map(w=>`<div class="word-chip" onclick="speakRussian('${w.ru.replace(/'/g,"\\'")}')"><div class="chip-ru">${w.ru}</div><div class="chip-en">${w.en}</div><div class="chip-pos">${w.pos||''}</div></div>`).join('')+'</div>';
+}
+
+function deleteHistoryItem(i){if(viewingStudent)return;translateHistory.splice(i,1);scheduleSave();renderTranslateHistory();}
+function clearTranslateHistory(){if(viewingStudent)return;if(!confirm('Clear all history?'))return;translateHistory=[];scheduleSave();renderTranslateHistory();}
+
+async function translateText(){
+  const text=document.getElementById('translate-input').value.trim();if(!text)return;
+  document.getElementById('translate-result').innerHTML='<div style="color:#888;font-size:14px;padding:10px 0">Translating<span class="loading-dots"></span></div>';
+  document.getElementById('translate-full').style.display='none';
+  try {
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:`Translate this English text into Russian with word-by-word breakdown: "${text}"\nReturn ONLY this JSON, no markdown:\n{"full_ru":"...","full_tr":"...","words":[{"en":"...","ru":"...","tr":"...","pos":"..."}]}`}]})});
+    const data=await r.json();
+    let raw=data.content.map(c=>c.text||'').join('').replace(/```json|```/g,'').trim();
+    const res=JSON.parse(raw);
+    document.getElementById('translate-full-ru').textContent=res.full_ru;
+    document.getElementById('translate-full-tr').textContent=res.full_tr;
+    document.getElementById('translate-full').style.display='block';
+    document.getElementById('translate-result').innerHTML='<div class="word-chips">'+res.words.map(w=>`<div class="word-chip" onclick="speakRussian('${w.ru.replace(/'/g,"\\'")}')"><div class="chip-ru">${w.ru}</div><div class="chip-en">${w.en}</div><div class="chip-pos">${w.pos||''}</div></div>`).join('')+'</div><div style="font-size:12px;color:#aaa;margin-top:10px">Tap a word to hear it</div>';
+    if(!viewingStudent){
+      const entry={input:text,full_ru:res.full_ru,full_tr:res.full_tr,words:res.words};
+      const ex=translateHistory.findIndex(h=>h.input.toLowerCase()===text.toLowerCase());
+      if(ex!==-1)translateHistory.splice(ex,1);
+      translateHistory.unshift(entry);if(translateHistory.length>100)translateHistory.pop();
+      scheduleSave();renderTranslateHistory();
+    }
+  } catch(e){document.getElementById('translate-result').innerHTML='<div style="color:#A32D2D;font-size:14px;padding:10px 0">Translation failed. Try again.</div>';}
+}
+
+// BOOT
+checkUrl();
+waitForFb().then(()=>resumeSession());
+</script>
+</body>
+</html>
