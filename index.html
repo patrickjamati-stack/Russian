@@ -632,6 +632,12 @@ function exitStudentView(){
 
 // RESUME SESSION
 async function resumeSession(){
+  // If URL has ?tutor= param, this is a student invite link — never auto-login as tutor
+  const urlParams=new URLSearchParams(window.location.search);
+  if(urlParams.get('tutor')){
+    pickRole('student');
+    return;
+  }
   await waitForFb();
   try {
     const raw=localStorage.getItem('ru_session');if(!raw)return;
@@ -646,8 +652,7 @@ async function resumeSession(){
 }
 
 function checkUrl(){
-  const p=new URLSearchParams(window.location.search);
-  if(p.get('tutor')){pickRole('student');}
+  // handled inside resumeSession now
 }
 
 // APP
