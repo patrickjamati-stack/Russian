@@ -723,7 +723,7 @@ async function sendConvoMessage(){
   document.getElementById('chat-messages').appendChild(ld);document.getElementById('chat-messages').scrollTop=9999;
   const sys=`You are a friendly Russian language tutor. Respond naturally in English+Russian. If the student writes Russian, correct errors. ${accentCheck?'After your reply write CORRECTION: followed by one pronunciation tip.':''} Topic: ${convoTopic}. Be concise (2-4 sentences).`;
   try {
-    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','anthropic-dangerous-allow-browser':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:sys,messages:convoHistory})});
+    const r=await fetch('https://shiny-block-21fd.patrickjamati.workers.dev',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:sys,messages:convoHistory})});
     const data=await r.json();
     const full=data.content.map(c=>c.text||'').join('');
     const parts=full.split(/\nCORRECTION:/i);
@@ -763,7 +763,7 @@ async function generateFlashcards(){
   const topic=document.getElementById('fc-topic-input').value.trim();if(!topic){alert('Enter a topic.');return;}
   const btn=document.querySelector('#fc-setup button.primary');btn.textContent='Generating...';btn.disabled=true;
   try {
-    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','anthropic-dangerous-allow-browser':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:`Create 8 Russian flashcards about: "${topic}". ONLY return a JSON array, no markdown. Format: [{"ru":"...","tr":"...","en":"...","ex":"..."}]`}]})});
+    const r=await fetch('https://shiny-block-21fd.patrickjamati.workers.dev',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:`Create 8 Russian flashcards about: "${topic}". ONLY return a JSON array, no markdown. Format: [{"ru":"...","tr":"...","en":"...","ex":"..."}]`}]})});
     const data=await r.json();
     let txt=data.content.map(c=>c.text||'').join('').replace(/```json|```/g,'').trim();
     fcDeck=JSON.parse(txt).sort(()=>Math.random()-0.5);startFCSession();
@@ -824,7 +824,7 @@ async function translateText(){
   document.getElementById('translate-result').innerHTML='<div style="color:#888;font-size:14px;padding:10px 0">Translating<span class="loading-dots"></span></div>';
   document.getElementById('translate-full').style.display='none';
   try {
-    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','anthropic-dangerous-allow-browser':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:`Translate this English text into Russian with word-by-word breakdown: "${text}"\nReturn ONLY this JSON, no markdown:\n{"full_ru":"...","full_tr":"...","words":[{"en":"...","ru":"...","tr":"...","pos":"..."}]}`}]})});
+    const r=await fetch('https://shiny-block-21fd.patrickjamati.workers.dev',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:`Translate this English text into Russian with word-by-word breakdown: "${text}"\nReturn ONLY this JSON, no markdown:\n{"full_ru":"...","full_tr":"...","words":[{"en":"...","ru":"...","tr":"...","pos":"..."}]}`}]})});
     const data=await r.json();
     let raw=data.content.map(c=>c.text||'').join('').replace(/```json|```/g,'').trim();
     const res=JSON.parse(raw);
